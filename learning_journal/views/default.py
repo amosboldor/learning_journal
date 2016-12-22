@@ -35,7 +35,7 @@ def create(request):
         new_model = Entry(title=title, body=body, creation_date=creation_date)
         request.dbsession.add(new_model)
         return HTTPFound(location=request.route_url('home'))
-    return {"data": {"name": "A New Form"}}
+    return {}
 
 
 @view_config(route_name="update", renderer="../templates/edit_entry.jinja2")

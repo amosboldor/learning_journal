@@ -1,4 +1,6 @@
+# encoding: utf-8
 """The script for initializing a database."""
+
 import os
 import sys
 import transaction
