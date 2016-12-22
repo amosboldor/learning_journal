@@ -1,10 +1,10 @@
 from pyramid.response import Response
 from pyramid.view import view_config
+from pyramid.httpexceptions import HTTPFound
 
 from sqlalchemy.exc import DBAPIError
 
 from ..models import Entry
-
 
 
 @view_config(route_name="home", renderer="../templates/index.jinja2")
@@ -36,8 +36,17 @@ def detail(request):
 
 @view_config(route_name="create", renderer="../templates/new_entry.jinja2")
 def create(request):
-    """View for create page."""
-    return {"post": ENTRIES}
+    if request.method == "POST":
+        title = request.POST["title"]
+        body = request.POST["body"]
+        creation_date = request.POST["creation_date"]
+        new_model = Entry(title=title, body=body, creation_date=creation_date)
+
+        request.dbsession.add(new_model)
+
+        return HTTPFound(location=request.route_url('home'))
+
+    return {"data": {"name": "A New Form"}}
 
 
 @view_config(route_name="update", renderer="../templates/edit_entry.jinja2")
