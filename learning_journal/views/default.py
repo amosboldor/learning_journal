@@ -1,28 +1,20 @@
+"""Views for learning journal."""
 from pyramid.response import Response
 from pyramid.view import view_config
 from pyramid.httpexceptions import HTTPFound
-
+import datetime
 from sqlalchemy.exc import DBAPIError
-
 from ..models import Entry
-
-import time
 
 
 @view_config(route_name="home", renderer="../templates/index.jinja2")
 def home_list(request):
     """View for the home page."""
-    list_posts = []
     try:
         query = request.dbsession.query(Entry)
-        for item in query.filter(Entry.id).all():
-            list_posts.append({'title': item.title,
-                               'creation_date': item.creation_date,
-                               'id': item.id})
-        # import pdb; pdb.set_trace()
     except DBAPIError:
         return Response(db_err_msg, content_type='text/plain', status=500)
-    return {'posts': list_posts}
+    return {'posts': query}
 
 
 @view_config(route_name="detail", renderer="../templates/post_detail.jinja2")
@@ -30,20 +22,16 @@ def detail(request):
     """View for the detail page."""
     query = request.dbsession.query(Entry)
     post_dict = query.filter(Entry.id == request.matchdict['id']).first()
-    a = {'title': post_dict.title,
-         'creation_date': post_dict.creation_date,
-         'body': post_dict.body,
-         'id': post_dict.id
-         }
-    return {"post": a}
+    return {"post": post_dict}
 
 
 @view_config(route_name="create", renderer="../templates/new_entry.jinja2")
 def create(request):
+    """View for new entry page."""
     if request.method == "POST":
         title = request.POST["title"]
         body = request.POST["body"]
-        creation_date = request.POST["creation_date"]
+        creation_date = datetime.date.today().strftime("%m/%d/%Y")
         new_model = Entry(title=title, body=body, creation_date=creation_date)
         request.dbsession.add(new_model)
         return HTTPFound(location=request.route_url('home'))
@@ -56,18 +44,13 @@ def update(request):
     if request.method == "POST":
         title = request.POST["title"]
         body = request.POST["body"]
-        creation_date = request.POST["creation_date"]
+        creation_date = datetime.date.today().strftime("%m/%d/%Y")
         new_model = Entry(title=title, body=body, creation_date=creation_date)
         request.dbsession.add(new_model)
         return HTTPFound(location=request.route_url('home'))
     query = request.dbsession.query(Entry)
     post_dict = query.filter(Entry.id == request.matchdict['id']).first()
-    a = {
-        'title': post_dict.title,
-        'creation_date': post_dict.creation_date,
-        'body': post_dict.body,
-    }
-    return {"post": a}
+    return {"post": post_dict}
 
 
 db_err_msg = """\

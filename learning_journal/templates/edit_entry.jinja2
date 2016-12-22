@@ -1,22 +1,17 @@
 {% extends "layout.jinja2" %}
 {% block main %}
-
-
-
 <main class="container">
-    
     <div class="form-group">
-     <form action="{{ request.route_url('create') }}" method="POST">
-        <label for="Title">Title:</label>
-        <input class="form-control" rows="5" id="Title" name="title" value="{{post.title}}"></input>
-        <label for="Entry">Entry:</label>
-        <textarea class="form-control" rows="5" id="Entry" name="body">{{ post.body }}</textarea>
-        <input class="form-control" rows="5" id="creation_date" type="text" name="creation_date"></input>
-        <input type="submit" value="Submit"/>
+       <form method="POST">
+          <label for="Title">Title:</label>
+          <input class="form-control" rows="5" id="Title" name="title" value="{{ post.title }}"></input>
+          <br>
+          <label for="Entry">Entry:</label>
+          <textarea class="form-control" rows="5" id="Entry" name="body">{{ post.body }}</textarea>
+          <br>
+          <input type="submit" class="btn btn-primary" value="Submit"/>
+          <a href="{{ request.route_url('home')}}"><button type="button" class="btn btn-default">Cancel</button></a>
         </form>
     </div>
-      {# <button type="button" class="btn btn-primary">Save New Entry</button> #}
-      <a href="{{ request.route_url('home')}}"><button type="button" class="btn btn-default">Cancel</button></a>
 </main>
 {% endblock %}
-

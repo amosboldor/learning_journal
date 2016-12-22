@@ -1,4 +1,6 @@
 # encoding: utf-8
+"""The script for initializing a database."""
+
 import os
 import sys
 import transaction
@@ -6,7 +8,7 @@ import transaction
 from pyramid.paster import (
     get_appsettings,
     setup_logging,
-    )
+)
 
 from pyramid.scripts.common import parse_vars
 
@@ -15,7 +17,7 @@ from ..models import (
     get_engine,
     get_session_factory,
     get_tm_session,
-    )
+)
 from ..models import Entry
 
 ENTRIES = [
@@ -53,6 +55,7 @@ def main(argv=sys.argv):
     settings = get_appsettings(config_uri, options=options)
 
     engine = get_engine(settings)
+    Base.metadata.drop_all(engine)
     Base.metadata.create_all(engine)
 
     session_factory = get_session_factory(engine)
