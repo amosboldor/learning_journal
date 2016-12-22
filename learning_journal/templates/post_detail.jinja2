@@ -1,13 +1,9 @@
 {% extends "layout.jinja2" %}
 {% block main %}
 <main class="container">
-
-    <h1>{{post.title}}</h1>
-    <h2>Created: {{post.creation_date}}</h2>
-    <p>
-      {{post.body}}
-    </p>
+    <h1>{{ post.title }}</h1>
+    <h2>Created: {{ post.creation_date }}</h2>
+    <p>{{ post.body }}</p>
     <a href="{{ request.route_url('update', id=post.id) }}"><button type="button" id="target" class="btn btn-primary">Edit</button></a>
 </main>
 {% endblock %}
-route_name="update"
