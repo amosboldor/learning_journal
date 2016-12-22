@@ -8,7 +8,7 @@
     <div class="form-group">
      <form action="{{ request.route_url('create') }}" method="POST">
         <label for="Title">Title:</label>
-        <input class="form-control" rows="5" id="Title" name="title">{{ post.title }}</input>
+        <input class="form-control" rows="5" id="Title" name="title" value="{{post.title}}"></input>
         <label for="Entry">Entry:</label>
         <textarea class="form-control" rows="5" id="Entry" name="body">{{ post.body }}</textarea>
         <input class="form-control" rows="5" id="creation_date" type="text" name="creation_date"></input>
