@@ -6,6 +6,8 @@ from sqlalchemy.exc import DBAPIError
 
 from ..models import Entry
 
+import time
+
 
 @view_config(route_name="home", renderer="../templates/index.jinja2")
 def home_list(request):
@@ -27,10 +29,12 @@ def home_list(request):
 def detail(request):
     """View for the detail page."""
     query = request.dbsession.query(Entry)
-    post_obj = query.filter(Entry.id == request.matchdict['id']).first()
-    a = {'title': post_obj.title,
-         'creation_date': post_obj.creation_date,
-         'body': post_obj.body}
+    post_dict = query.filter(Entry.id == request.matchdict['id']).first()
+    a = {'title': post_dict.title,
+         'creation_date': post_dict.creation_date,
+         'body': post_dict.body,
+         'id': post_dict.id
+         }
     return {"post": a}
 
 
@@ -41,18 +45,29 @@ def create(request):
         body = request.POST["body"]
         creation_date = request.POST["creation_date"]
         new_model = Entry(title=title, body=body, creation_date=creation_date)
-
         request.dbsession.add(new_model)
-
         return HTTPFound(location=request.route_url('home'))
-
     return {"data": {"name": "A New Form"}}
 
 
 @view_config(route_name="update", renderer="../templates/edit_entry.jinja2")
 def update(request):
     """View for update page."""
-    return {"post": ENTRIES[int(request.matchdict['id']) - 1]}
+    if request.method == "POST":
+        title = request.POST["title"]
+        body = request.POST["body"]
+        creation_date = request.POST["creation_date"]
+        new_model = Entry(title=title, body=body, creation_date=creation_date)
+        request.dbsession.add(new_model)
+        return HTTPFound(location=request.route_url('home'))
+    query = request.dbsession.query(Entry)
+    post_dict = query.filter(Entry.id == request.matchdict['id']).first()
+    a = {
+        'title': post_dict.title,
+        'creation_date': post_dict.creation_date,
+        'body': post_dict.body,
+    }
+    return {"post": a}
 
 
 db_err_msg = """\

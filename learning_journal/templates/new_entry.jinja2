@@ -2,7 +2,7 @@
 {% block main %}
 <main class="container">
     <div class="form-group">
-        <form action="{{ request.route_url('create') }}" method="POST">
+        <form action="{{ request.route_url('update', id=post.id) }}" method="POST">
         <label for="Title">Title:</label>
         <input class="form-control" rows="5" id="Title" type="text" name="title"></input>
         <label for="Entry">Entry:</label>
@@ -13,7 +13,7 @@
         </form>
     </div>
       {# <button type="button" class="btn btn-primary">Save New Entry</button> #}
-      <a href="/"><button type="button" class="btn btn-default">Cancel</button></a>
+      <{# a href="/"><button type="button" class="btn btn-default">Cancel</button></a> #}
 
 </main>
 {% endblock %}
