@@ -2,12 +2,9 @@
 from pyramid.response import Response
 from pyramid.view import view_config
 from pyramid.httpexceptions import HTTPFound
-
+import datetime
 from sqlalchemy.exc import DBAPIError
-
 from ..models import Entry
-
-# import time
 
 
 @view_config(route_name="home", renderer="../templates/index.jinja2")
@@ -34,7 +31,7 @@ def create(request):
     if request.method == "POST":
         title = request.POST["title"]
         body = request.POST["body"]
-        creation_date = 'Time stuff.'
+        creation_date = datetime.date.today().strftime("%m/%d/%Y")
         new_model = Entry(title=title, body=body, creation_date=creation_date)
         request.dbsession.add(new_model)
         return HTTPFound(location=request.route_url('home'))
@@ -47,7 +44,7 @@ def update(request):
     if request.method == "POST":
         title = request.POST["title"]
         body = request.POST["body"]
-        creation_date = 'Time stuff.'
+        creation_date = datetime.date.today().strftime("%m/%d/%Y")
         new_model = Entry(title=title, body=body, creation_date=creation_date)
         request.dbsession.add(new_model)
         return HTTPFound(location=request.route_url('home'))
