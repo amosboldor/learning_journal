@@ -1,0 +1,12 @@
+{% extends "layout.jinja2" %}
+{% block main %}
+<main class="container">
+
+    <h1>{{post.title}}</h1>
+    <h2>Created: {{post.published_on}}</h2>
+    <p>
+      {{post.body}}
+    </p>
+    <a href="/journal/{{post.id}}/edit-entry"><button type="button" id="target" class="btn btn-primary">Edit</button></a>
+</main>
+{% endblock %}

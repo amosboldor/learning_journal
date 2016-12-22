@@ -1,0 +1,10 @@
+{% extends "layout.jinja2" %}
+{% block main %}
+<main class="container">
+    <ul>
+      {% for post in posts %}
+        <li><a href="{{ request.route_url('detail', id=post.id)}}">{{ post.title }}</a> Created: {{ post.published_on}}</li>
+      {% endfor %}
+    </ul>
+</main>
+{% endblock %}
