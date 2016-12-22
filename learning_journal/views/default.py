@@ -3,14 +3,14 @@ from pyramid.view import view_config
 
 from sqlalchemy.exc import DBAPIError
 
-from ..models import MyModel
+from ..models import Entry
 
 
 @view_config(route_name='home', renderer='../templates/mytemplate.jinja2')
 def my_view(request):
     try:
-        query = request.dbsession.query(MyModel)
-        one = query.filter(MyModel.name == 'one').first()
+        query = request.dbsession.query(Entry)
+        one = query.filter(Entry.title == 'one').first()
     except DBAPIError:
         return Response(db_err_msg, content_type='text/plain', status=500)
     return {'one': one, 'project': 'learning_journal'}
@@ -24,23 +24,6 @@ def create_view(request):
         return {}
     return {}
 
-ENTRIES = [
-    {
-        "title": "It's Monday Dude",
-        "id": 1,
-        "published_on": "Dec 20, 2016",
-        "body": "Today we got to learn about the python framework pyramid and it was not that hard to setup just tedious. We also had to implement a Deque and we imported double linked list to do this. Today was easy compared to other days"
-    },
-    {
-        "title": "It's Tuesday Dude",
-        "id": 2,
-        "published_on": "Dec 21, 2016",
-        "body": """Today I learned more about how routes work and we got to hock up the views to the routes a different way.
-I also learned how to use templates. One thing was very hard today was implementing binary heap.
-And one thing that bugged me was that I couldn’t run tests on my web because of some weird error.
-Today was hard but I didn't feel like I wanted to pull my hair out."""
-    }
-]
 
 
 @view_config(route_name="home", renderer="templates/index.jinja2")
