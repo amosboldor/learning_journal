@@ -15,7 +15,25 @@ from ..models import (
     get_session_factory,
     get_tm_session,
     )
-from ..models import MyModel
+from ..models import Entry
+
+ENTRIES = [
+    {
+        "title": "It's Monday Dude",
+        "id": 1,
+        "creation_date": "Dec 20, 2016",
+        "body": "Today we got to learn about the python framework pyramid and it was not that hard to setup just tedious. We also had to implement a Deque and we imported double linked list to do this. Today was easy compared to other days"
+    },
+    {
+        "title": "It's Tuesday Dude",
+        "id": 2,
+        "creation_date": "Dec 21, 2016",
+        "body": """Today I learned more about how routes work and we got to hock up the views to the routes a different way.
+I also learned how to use templates. One thing was very hard today was implementing binary heap.
+And one thing that bugged me was that I couldn’t run tests on my web because of some weird error.
+Today was hard but I didn't feel like I wanted to pull my hair out."""
+    }
+]
 
 
 def usage(argv):
@@ -40,6 +58,6 @@ def main(argv=sys.argv):
 
     with transaction.manager:
         dbsession = get_tm_session(session_factory, transaction.manager)
-
-        model = MyModel(name='one', value=1)
-        dbsession.add(model)
+        for index, dic in enumerate(ENTRIES):
+            model = Entry(title=dic["title"], body=dic["body"], creation_date=dic["creation_date"])
+            dbsession.add(model)

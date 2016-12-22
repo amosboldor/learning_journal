@@ -3,10 +3,11 @@
 <main class="container">
 
     <h1>{{post.title}}</h1>
-    <h2>Created: {{post.published_on}}</h2>
+    <h2>Created: {{post.creation_date}}</h2>
     <p>
       {{post.body}}
     </p>
-    <a href="/journal/{{post.id}}/edit-entry"><button type="button" id="target" class="btn btn-primary">Edit</button></a>
+    <a href="{{ request.route_url('update', id=post.id) }}"><button type="button" id="target" class="btn btn-primary">Edit</button></a>
 </main>
 {% endblock %}
+route_name="update"
