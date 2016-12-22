@@ -17,4 +17,4 @@ class Entry(Base):
     creation_date = Column(Unicode)
 
 
-Index('my_index', MyModel.name, unique=True, mysql_length=255)
+Index('my_index', Entry.id, unique=True, mysql_length=255)
