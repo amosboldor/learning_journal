@@ -15,5 +15,5 @@ You can find this learning journal deployed on Heroku [here](https://amos-learni
 - edit: `journal/{ ID of Entry }/edit-entry` will take you to a (semi-functional) form pre-populated with the the specific journal entry base on the ID that is given.
 
 ## Authors:
-    - Maelle Vance
-    - Amos Boldor
+- Maelle Vance
+- Amos Boldor
