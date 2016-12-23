@@ -45,8 +45,9 @@ def update(request):
         title = request.POST["title"]
         body = request.POST["body"]
         creation_date = datetime.date.today().strftime("%m/%d/%Y")
-        new_model = Entry(title=title, body=body, creation_date=creation_date)
-        request.dbsession.add(new_model)
+        query = request.dbsession.query(Entry)
+        post_dict = query.filter(Entry.id == request.matchdict['id'])
+        post_dict.update({"title": title, "body": body, "creation_date": creation_date})
         return HTTPFound(location=request.route_url('home'))
     query = request.dbsession.query(Entry)
     post_dict = query.filter(Entry.id == request.matchdict['id']).first()
