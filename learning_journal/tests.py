@@ -9,7 +9,6 @@ from pyramid import testing
 from .models import Entry, get_tm_session
 from .models.meta import Base
 from .scripts.initializedb import ENTRIES
-import datetime
 
 
 @pytest.fixture(scope="session")
@@ -43,8 +42,8 @@ def db_session(configuration, request):
     new database session. It binds that session to the available engine
     and returns a new session for every call of the dummy_request object.
     """
-    SessionFactory = configuration.registry['dbsession_factory']
-    session = SessionFactory()
+    session_factory = configuration.registry['dbsession_factory']
+    session = session_factory()
     engine = session.bind
     Base.metadata.create_all(engine)
 
@@ -105,65 +104,89 @@ def test_home_list_returns_objects_when_exist(dummy_request, add_models):
     query_list = result["posts"][:]
     assert len(query_list) == 2
 
+
+def test_detail_returns_entry_1(dummy_request, add_models):
+    """Test that entry return entry one."""
+    from .views.default import detail
+    dummy_request.matchdict['id'] = 1
+    result = detail(dummy_request)
+    query_reslts = result["post"]
+    assert query_reslts.title == "It's Monday Dude"
+    assert query_reslts.body == "Today we got to learn about the python framework pyramid and it was not that hard to setup just tedious. We also had to implement a Deque and we imported double linked list to do this. Today was easy compared to other days"
+
+
+def test_detail_returns_entry_2(dummy_request, add_models):
+    """Test that entry return entry two."""
+    from .views.default import detail
+    dummy_request.matchdict['id'] = 2
+    result = detail(dummy_request)
+    query_reslts = result["post"]
+    assert query_reslts.title == "It's Tuesday Dude"
+    assert query_reslts.body == "Today I learned more about how routes work and we got to hock up the views to the routes a different way.\nI also learned how to use templates. One thing was very hard today was implementing binary heap.\nAnd one thing that bugged me was that I couldn’t run tests on my web because of some weird error.\nToday was hard but I didn't feel like I wanted to pull my hair out."
+
+
+def test_update_returns_entry_1(dummy_request, add_models):
+    """Test update returns entry two."""
+    from .views.default import update
+    dummy_request.matchdict['id'] = 1
+    result = update(dummy_request)
+    query_reslts = result["post"]
+    assert query_reslts.title == "It's Monday Dude"
+    assert query_reslts.body == "Today we got to learn about the python framework pyramid and it was not that hard to setup just tedious. We also had to implement a Deque and we imported double linked list to do this. Today was easy compared to other days"
+
+
+def test_update_returns_entry_2(dummy_request, add_models):
+    """Test update returns entry two."""
+    from .views.default import update
+    dummy_request.matchdict['id'] = 2
+    result = update(dummy_request)
+    query_reslts = result["post"]
+    assert query_reslts.title == "It's Tuesday Dude"
+    assert query_reslts.body == "Today I learned more about how routes work and we got to hock up the views to the routes a different way.\nI also learned how to use templates. One thing was very hard today was implementing binary heap.\nAnd one thing that bugged me was that I couldn’t run tests on my web because of some weird error.\nToday was hard but I didn't feel like I wanted to pull my hair out."
+
+
+
 # ======== FUNCTIONAL TESTS ===========
 
 
-# @pytest.fixture
-# def testapp():
-#     """Create an instance of webtests TestApp for testing routes.
+@pytest.fixture
+def testapp():
+    """Create an instance of webtests TestApp for testing routes."""
+    from webtest import TestApp
+    from learning_journal import main
 
-#     With the alchemy scaffold we need to add to our test application the
-#     setting for a database to be used for the models.
-#     We have to then set up the database by starting a database session.
-#     Finally we have to create all of the necessary tables that our app
-#     normally uses to function.
+    app = main({}, **{"sqlalchemy.url": 'sqlite:///:memory:'})
+    testapp = TestApp(app)
 
-#     The scope of the fixture is function-level, so every test will get a new
-#     test application.
-#     """
-#     from webtest import TestApp
-#     from learing_journal import main
+    session_factory = app.registry["dbsession_factory"]
+    engine = session_factory().bind
+    Base.metadata.create_all(bind=engine)
 
-#     app = main({}, **{"sqlalchemy.url": 'sqlite:///:memory:'})
-#     testapp = TestApp(app)
-
-#     SessionFactory = app.registry["dbsession_factory"]
-#     engine = SessionFactory().bind
-#     Base.metadata.create_all(bind=engine)
-
-#     return testapp
+    return testapp
 
 
-# @pytest.fixture
-# def fill_the_db(testapp):
-#     """Fill the database with some model instances.
+@pytest.fixture
+def fill_the_db(testapp):
+    """Fill the database with some model instances.
 
-#     Start a database session with the transaction manager and add all of the
-#     expenses. This will be done anew for every test.
-#     """
-#     SessionFactory = testapp.app.registry["dbsession_factory"]
-#     with transaction.manager:
-#         dbsession = get_tm_session(SessionFactory, transaction.manager)
-#         dbsession.add_all(STUFF)
-
-
-# def test_home_route_has_table(testapp):
-#     """The home page has a table in the html."""
-#     response = testapp.get('/', status=200)
-#     html = response.html
-#     import pdb; pdb.set_trace()
-#     assert len(html.find_all("table")) == 1
+    Start a database session with the transaction manager and add all of the
+    expenses. This will be done anew for every test.
+    """
+    session_factory = testapp.app.registry["dbsession_factory"]
+    with transaction.manager:
+        dbsession = get_tm_session(session_factory, transaction.manager)
+        dbsession.add_all(STUFF)
 
 
-# def test_home_route_with_data_has_filled_table(testapp, fill_the_db):
-#     """When there's data in the database, the home page has some rows."""
-#     response = testapp.get('/', status=200)
-#     html = response.html
-#     assert len(html.find_all("tr")) == 101
+def test_home_route_has_list_of_enties(testapp):
+    """The home page has only 3 list elements without the db."""
+    response = testapp.get('/', status=200)
+    html = response.html
+    assert len(html.find_all("li")) == 3
 
 
-# def test_home_route_has_table2(testapp):
-#     """Without data the home page only has the header row in its table."""
-#     response = testapp.get('/', status=200)
-#     html = response.html
-#     assert len(html.find_all("tr")) == 1
+def test_home_route_has_list_of_enties_in(testapp, fill_the_db):
+    """The home page has 5 list elements with db."""
+    response = testapp.get('/', status=200)
+    html = response.html
+    assert len(html.find_all("li")) == 5
