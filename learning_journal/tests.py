@@ -6,72 +6,59 @@ import transaction
 
 from pyramid import testing
 
-from .models import Entry, get_tm_session
+# from .models import Entry, get_tm_session
 from .models.meta import Base
 from .scripts.initializedb import ENTRIES
 
 
+from .models import (
+    get_engine,
+    get_session_factory,
+    get_tm_session,
+    Entry
+)
+
+
 @pytest.fixture(scope="session")
-def configuration(request):
-    """Set up a Configurator instance.
-
-    This Configurator instance sets up a pointer to the location of the
-        database.
-    It also includes the models from your app's model package.
-    Finally it tears everything down, including the in-memory SQLite database.
-
-    This configuration will persist for the entire duration of your PyTest run.
-    """
-    settings = {
-        'sqlalchemy.url': 'sqlite:///:memory:'}  # points to an in-memory database.
-    config = testing.setUp(settings=settings)
-    config.include('.models')
-
-    def teardown():
-        testing.tearDown()
-
-    request.addfinalizer(teardown)
-    return config
-
-
-@pytest.fixture()
-def db_session(configuration, request):
-    """Create a session for interacting with the test database.
-
-    This uses the dbsession_factory on the configurator instance to create a
-    new database session. It binds that session to the available engine
-    and returns a new session for every call of the dummy_request object.
-    """
-    session_factory = configuration.registry['dbsession_factory']
-    session = session_factory()
-    engine = session.bind
+def sqlengine(request):
+    """Return sql engine."""
+    config = testing.setUp(settings={
+        'sqlalchemy.url': 'sqlite:///:memory:'
+    })
+    config.include(".models")
+    settings = config.get_settings()
+    engine = get_engine(settings)
     Base.metadata.create_all(engine)
 
     def teardown():
-        session.transaction.rollback()
+        testing.tearDown()
+        transaction.abort()
+        Base.metadata.drop_all(engine)
+
+    request.addfinalizer(teardown)
+    return engine
+
+
+@pytest.fixture(scope="function")
+def new_session(sqlengine, request):
+    """Return new session."""
+    session_factory = get_session_factory(sqlengine)
+    session = get_tm_session(session_factory, transaction.manager)
+
+    def teardown():
+        transaction.abort()
 
     request.addfinalizer(teardown)
     return session
 
 
 @pytest.fixture
-def dummy_request(db_session):
-    """Instantiate a fake HTTP Request, complete with a database session.
-
-    This is a function-level fixture, so every new request will have a
-    new database session.
-    """
-    return testing.DummyRequest(dbsession=db_session)
-
-
-@pytest.fixture
-def add_models(dummy_request):
-    """Add a bunch of model instances to the database.
-
-    Every test that includes this fixture will add new random expenses.
-    """
-    dummy_request.dbsession.add_all(STUFF)
-
+def dummy_request(new_session, method="GET"):
+    """Instantiate a fake HTTP Request, complete with a database session."""
+    request = testing.DummyRequest()
+    request.method = method
+    request.dbsession = new_session
+    return request
 
 STUFF = []
 for index, dic in enumerate(ENTRIES):
@@ -82,10 +69,10 @@ for index, dic in enumerate(ENTRIES):
 # ======== UNIT TESTS ==========
 
 
-def test_new_entrys_are_added(db_session):
+def test_new_entrys_are_added(new_session):
     """New entries get added to the database."""
-    db_session.add_all(STUFF)
-    query = db_session.query(Entry).all()
+    new_session.add_all(STUFF)
+    query = new_session.query(Entry).all()
     assert len(query) == len(STUFF)
 
 
@@ -97,17 +84,25 @@ def test_home_list_returns_empty_when_empty(dummy_request):
     assert len(query_list) == 0
 
 
-def test_home_list_returns_objects_when_exist(dummy_request, add_models):
+def test_home_list_returns_objects_when_exist(dummy_request, new_session):
     """Test that the home list does return objects when the DB is populated."""
     from .views.default import home_list
+    model = Entry(title=ENTRIES[0]["title"],
+                  body=ENTRIES[0]["body"],
+                  creation_date=ENTRIES[0]["creation_date"])
+    new_session.add(model)
     result = home_list(dummy_request)
     query_list = result["posts"][:]
-    assert len(query_list) == 2
+    assert len(query_list) == 1
 
 
-def test_detail_returns_entry_1(dummy_request, add_models):
+def test_detail_returns_entry_1(dummy_request, new_session):
     """Test that entry return entry one."""
     from .views.default import detail
+    model = Entry(title=ENTRIES[0]["title"],
+                  body=ENTRIES[0]["body"],
+                  creation_date=ENTRIES[0]["creation_date"])
+    new_session.add(model)
     dummy_request.matchdict['id'] = 1
     result = detail(dummy_request)
     query_reslts = result["post"]
@@ -115,19 +110,27 @@ def test_detail_returns_entry_1(dummy_request, add_models):
     assert query_reslts.body == "Today we got to learn about the python framework pyramid and it was not that hard to setup just tedious. We also had to implement a Deque and we imported double linked list to do this. Today was easy compared to other days"
 
 
-def test_detail_returns_entry_2(dummy_request, add_models):
+def test_detail_returns_entry_2(dummy_request, new_session):
     """Test that entry return entry two."""
     from .views.default import detail
-    dummy_request.matchdict['id'] = 2
+    model = Entry(title=ENTRIES[1]["title"],
+                  body=ENTRIES[1]["body"],
+                  creation_date=ENTRIES[1]["creation_date"])
+    new_session.add(model)
+    dummy_request.matchdict['id'] = 1
     result = detail(dummy_request)
     query_reslts = result["post"]
     assert query_reslts.title == "It's Tuesday Dude"
     assert query_reslts.body == "Today I learned more about how routes work and we got to hock up the views to the routes a different way.\nI also learned how to use templates. One thing was very hard today was implementing binary heap.\nAnd one thing that bugged me was that I couldn’t run tests on my web because of some weird error.\nToday was hard but I didn't feel like I wanted to pull my hair out."
 
 
-def test_update_returns_entry_1(dummy_request, add_models):
+def test_update_returns_entry_1(dummy_request, new_session):
     """Test update returns entry two."""
     from .views.default import update
+    model = Entry(title=ENTRIES[0]["title"],
+                  body=ENTRIES[0]["body"],
+                  creation_date=ENTRIES[0]["creation_date"])
+    new_session.add(model)
     dummy_request.matchdict['id'] = 1
     result = update(dummy_request)
     query_reslts = result["post"]
@@ -135,15 +138,18 @@ def test_update_returns_entry_1(dummy_request, add_models):
     assert query_reslts.body == "Today we got to learn about the python framework pyramid and it was not that hard to setup just tedious. We also had to implement a Deque and we imported double linked list to do this. Today was easy compared to other days"
 
 
-def test_update_returns_entry_2(dummy_request, add_models):
+def test_update_returns_entry_2(dummy_request, new_session):
     """Test update returns entry two."""
     from .views.default import update
-    dummy_request.matchdict['id'] = 2
+    model = Entry(title=ENTRIES[1]["title"],
+                  body=ENTRIES[1]["body"],
+                  creation_date=ENTRIES[1]["creation_date"])
+    new_session.add(model)
+    dummy_request.matchdict['id'] = 1
     result = update(dummy_request)
     query_reslts = result["post"]
     assert query_reslts.title == "It's Tuesday Dude"
     assert query_reslts.body == "Today I learned more about how routes work and we got to hock up the views to the routes a different way.\nI also learned how to use templates. One thing was very hard today was implementing binary heap.\nAnd one thing that bugged me was that I couldn’t run tests on my web because of some weird error.\nToday was hard but I didn't feel like I wanted to pull my hair out."
-
 
 
 # ======== FUNCTIONAL TESTS ===========
@@ -165,28 +171,25 @@ def testapp():
     return testapp
 
 
-@pytest.fixture
-def fill_the_db(testapp):
-    """Fill the database with some model instances.
-
-    Start a database session with the transaction manager and add all of the
-    expenses. This will be done anew for every test.
-    """
-    session_factory = testapp.app.registry["dbsession_factory"]
-    with transaction.manager:
-        dbsession = get_tm_session(session_factory, transaction.manager)
-        dbsession.add_all(STUFF)
-
-
-def test_home_route_has_list_of_enties(testapp):
-    """The home page has only 3 list elements without the db."""
+def test_home_route_does_not_have_all_lists(testapp):
+    """The home page has all ul and li elements."""
     response = testapp.get('/', status=200)
     html = response.html
     assert len(html.find_all("li")) == 3
+    assert len(html.find_all("ul")) == 3
 
 
-def test_home_route_has_list_of_enties_in(testapp, fill_the_db):
-    """The home page has 5 list elements with db."""
-    response = testapp.get('/', status=200)
+def test_new_entry_route_has_input_and_textarea(testapp):
+    """Test that new entry route has input and textarea."""
+    response = testapp.get('/journal/new-entry', status=200)
     html = response.html
-    assert len(html.find_all("li")) == 5
+    assert len(html.find_all("input")) == 2
+    assert len(html.find_all("textarea")) == 1
+
+
+def test_update_entry_route_input_and_textarea(testapp):
+    """Test that update entry route has input and textarea."""
+    response = testapp.get('/journal/1/new-entry', status=200)
+    html = response.html
+    assert len(html.find_all("input")) == 2
+    assert len(html.find_all("textarea")) == 1
