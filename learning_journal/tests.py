@@ -189,7 +189,15 @@ def test_new_entry_route_has_input_and_textarea(testapp):
 
 def test_update_entry_route_input_and_textarea(testapp):
     """Test that update entry route has input and textarea."""
-    response = testapp.get('/journal/1/new-entry', status=200)
+    response = testapp.get('/journal/1/edit-entry', status=200)
     html = response.html
     assert len(html.find_all("input")) == 2
     assert len(html.find_all("textarea")) == 1
+
+
+def test_individual_entry_route(testapp):
+    """Test that an individual entry route brings up post_detail template."""
+    response = testapp.get('/journal/1', status=200)
+    html = response.html
+    assert len(html.find_all("main")) == 1
+    assert len(html.find_all("button")) == 2
