@@ -106,8 +106,8 @@ def test_detail_returns_entry_1(dummy_request, new_session):
     dummy_request.matchdict['id'] = 1
     result = detail(dummy_request)
     query_reslts = result["post"]
-    assert query_reslts.title == "It's Monday Dude"
-    assert query_reslts.body == "Today we got to learn about the python framework pyramid and it was not that hard to setup just tedious. We also had to implement a Deque and we imported double linked list to do this. Today was easy compared to other days"
+    assert query_reslts.title == ENTRIES[0]["title"]
+    assert query_reslts.body == ENTRIES[0]["body"]
 
 
 def test_detail_returns_entry_2(dummy_request, new_session):
@@ -120,8 +120,8 @@ def test_detail_returns_entry_2(dummy_request, new_session):
     dummy_request.matchdict['id'] = 1
     result = detail(dummy_request)
     query_reslts = result["post"]
-    assert query_reslts.title == "It's Tuesday Dude"
-    assert query_reslts.body == "Today I learned more about how routes work and we got to hock up the views to the routes a different way.\nI also learned how to use templates. One thing was very hard today was implementing binary heap.\nAnd one thing that bugged me was that I couldn’t run tests on my web because of some weird error.\nToday was hard but I didn't feel like I wanted to pull my hair out."
+    assert query_reslts.title == ENTRIES[1]["title"]
+    assert query_reslts.body == ENTRIES[1]["body"]
 
 
 def test_update_returns_entry_1(dummy_request, new_session):
@@ -148,8 +148,8 @@ def test_update_returns_entry_2(dummy_request, new_session):
     dummy_request.matchdict['id'] = 1
     result = update(dummy_request)
     query_reslts = result["post"]
-    assert query_reslts.title == "It's Tuesday Dude"
-    assert query_reslts.body == "Today I learned more about how routes work and we got to hock up the views to the routes a different way.\nI also learned how to use templates. One thing was very hard today was implementing binary heap.\nAnd one thing that bugged me was that I couldn’t run tests on my web because of some weird error.\nToday was hard but I didn't feel like I wanted to pull my hair out."
+    assert query_reslts.title == ENTRIES[1]["title"]
+    assert query_reslts.body == ENTRIES[1]["body"]
 
 
 def test_update_returns_entry_random(dummy_request, new_session):
