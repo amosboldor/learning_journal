@@ -152,6 +152,19 @@ def test_update_returns_entry_2(dummy_request, new_session):
     assert query_reslts.body == "Today I learned more about how routes work and we got to hock up the views to the routes a different way.\nI also learned how to use templates. One thing was very hard today was implementing binary heap.\nAnd one thing that bugged me was that I couldn’t run tests on my web because of some weird error.\nToday was hard but I didn't feel like I wanted to pull my hair out."
 
 
+def test_update_returns_entry_random(dummy_request, new_session):
+    """Test update returns entry random."""
+    from .views.default import update
+    model = Entry(title="WAT",
+                  body="Bob Dole",
+                  creation_date="1/2/3")
+    new_session.add(model)
+    dummy_request.matchdict['id'] = 1
+    result = update(dummy_request)
+    query_reslts = result["post"]
+    assert query_reslts.title == "WAT"
+    assert query_reslts.body == "Bob Dole"
+
 # ======== FUNCTIONAL TESTS ===========
 
 
