@@ -31,10 +31,7 @@ ENTRIES = [
         "title": "It's Tuesday Dude",
         "id": 2,
         "creation_date": "Dec 21, 2016",
-        "body": """Today I learned more about how routes work and we got to hock up the views to the routes a different way.
-I also learned how to use templates. One thing was very hard today was implementing binary heap.
-And one thing that bugged me was that I couldn’t run tests on my web because of some weird error.
-Today was hard but I didn't feel like I wanted to pull my hair out."""
+        "body": "Today I learned more about how routes work and we got to hock up the views to the routes a different way. I also learned how to use templates. One thing was very hard today was implementing binary heap. And one thing that bugged me was that I couldn't run tests on my web because of some weird error. Today was hard but I didn't feel like I wanted to pull my hair out."
     }
 ]
 
