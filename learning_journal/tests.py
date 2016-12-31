@@ -134,8 +134,8 @@ def test_update_returns_entry_1(dummy_request, new_session):
     dummy_request.matchdict['id'] = 1
     result = update(dummy_request)
     query_reslts = result["post"]
-    assert query_reslts.title == "It's Monday Dude"
-    assert query_reslts.body == "Today we got to learn about the python framework pyramid and it was not that hard to setup just tedious. We also had to implement a Deque and we imported double linked list to do this. Today was easy compared to other days"
+    assert query_reslts.title == ENTRIES[0]["title"]
+    assert query_reslts.body == ENTRIES[0]["body"]
 
 
 def test_update_returns_entry_2(dummy_request, new_session):
