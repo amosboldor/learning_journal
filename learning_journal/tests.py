@@ -1,4 +1,4 @@
-"""A short testing suite for the expense tracker."""
+"""A testing suite for my learning journal app."""
 
 
 import pytest
@@ -180,10 +180,10 @@ def testapp():
 
 
 def test_home_route_does_not_have_all_lists(testapp):
-    """The home page has all ul and li elements."""
+    """The home page has all html elements from index template."""
     response = testapp.get('/', status=200)
     html = response.html
-    assert len(html.find_all("li")) == 3
+    assert len(html.find_all("main")) == 1
     assert len(html.find_all("ul")) == 3
 
 
