@@ -163,50 +163,18 @@ def test_update_returns_entry_random(dummy_request, new_session):
 # ======== FUNCTIONAL TESTS ===========
 
 
-# @pytest.fixture
-# def testapp():
-#     """Create an instance of webtests TestApp for testing routes."""
-#     from webtest import TestApp
-#     from learning_journal import main
-
-#     app = main({}, **{"sqlalchemy.url": 'sqlite:///:memory:'})
-#     testapp = TestApp(app)
-
-#     session_factory = app.registry["dbsession_factory"]
-#     engine = session_factory().bind
-#     Base.metadata.create_all(bind=engine)
-
-#     return testapp
-
 @pytest.fixture
 def testapp():
-    """Create an instance of webtests TestApp for testing routes.
-
-    With the alchemy scaffold we need to add to our test application the
-    setting for a database to be used for the models.
-    We have to then set up the database by starting a database session.
-    Finally we have to create all of the necessary tables that our app
-    normally uses to function.
-    The scope of the fixture is function-level, so every test will get a new
-    test application.
-    """
+    """Create an instance of webtests TestApp for testing routes."""
     from webtest import TestApp
-    from pyramid.config import Configurator
-
-    def main(global_config, **settings):
-        """Function returns a Pyramid WSGI application."""
-        config = Configurator(settings=settings)
-        config.include('pyramid_jinja2')
-        config.include('.models')
-        config.include('.routes')
-        config.scan()
-        return config.make_wsgi_app()
+    from learning_journal import main
 
     app = main({}, **{'sqlalchemy.url': 'postgres:///amosboldor'})
     testapp = TestApp(app)
 
     session_factory = app.registry["dbsession_factory"]
     engine = session_factory().bind
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
     return testapp
@@ -214,25 +182,31 @@ def testapp():
 
 @pytest.fixture
 def fill_the_db(testapp):
-    """Fill the database with some model instances.
-    Start a database session with the transaction manager and add all of the
-    expenses. This will be done anew for every test.
-    """
-    SessionFactory = testapp.app.registry["dbsession_factory"]
+    """Fill the database with some model instances."""
+    session_factory = testapp.app.registry["dbsession_factory"]
     with transaction.manager:
-        dbsession = get_tm_session(SessionFactory, transaction.manager)
+        dbsession = get_tm_session(session_factory, transaction.manager)
         for entry in ENTRIES:
-            row = Entry(title=entry["title"], creation_date=entry["creation_date"], body=entry["body"])
+            row = Entry(title=entry["title"],
+                        creation_date=entry["creation_date"],
+                        body=entry["body"])
             dbsession.add(row)
 
 
-def test_home_route_does_not_have_all_lists(testapp, fill_the_db):
+def test_home_route_does_not_have_all_lists(testapp):
     """The home page has all html elements from index template."""
     response = testapp.get('/', status=200)
     html = response.html
-    import pdb; pdb.set_trace()
     assert len(html.find_all("main")) == 1
     assert len(html.find_all("ul")) == 3
+
+
+def test_home_route_has_entrys(testapp, fill_the_db):
+    """Test that the home page has all listed entries."""
+    response = testapp.get('/', status=200)
+    html = response.html
+    assert html.find_all('li')[3].getText() == "It's Monday Dude Created: Dec 20, 2016"
+    assert html.find_all('li')[4].getText() == "It's Tuesday Dude Created: Dec 21, 2016"
 
 
 def test_new_entry_route_has_input_and_textarea(testapp):
@@ -243,6 +217,17 @@ def test_new_entry_route_has_input_and_textarea(testapp):
     assert len(html.find_all("textarea")) == 1
 
 
+def test_new_entry_route_creates_new_entry_in_db(testapp):
+    """Test that new entry route creates new entry in db."""
+    title = {
+        'title': 'I have a dream.',
+        'body': 'sup'
+    }
+    response = testapp.post('/journal/new-entry', title, status=302)
+    full_response = response.follow()
+    assert full_response.html.find(class_='container').li.a.text == title["title"]
+
+
 def test_update_entry_route_input_and_textarea(testapp):
     """Test that update entry route has input and textarea."""
     response = testapp.get('/journal/1/edit-entry', status=200)
@@ -251,9 +236,38 @@ def test_update_entry_route_input_and_textarea(testapp):
     assert len(html.find_all("textarea")) == 1
 
 
+def test_update_entry_route_populates_with_correct_entry(testapp, fill_the_db):
+    """Test that update entry route populates the input and textarea."""
+    response = testapp.get('/journal/1/edit-entry', status=200)
+    title = response.html.form.input["value"]
+    body = response.html.form.textarea.contents[0]
+    assert title == ENTRIES[0]["title"]
+    assert body == ENTRIES[0]["body"]
+
+
+def test_update_entry_route_update_entry(testapp, fill_the_db):
+    """Test the update view and changes title."""
+    title = {
+        'title': 'I have a dream.',
+        'body': 'sup'
+    }
+    response = testapp.post('/journal/2/edit-entry', title, status=302)
+    full_response = response.follow().html.find_all(href='http://localhost/journal/2')[0]
+    assert full_response.text == title["title"]
+
+
 def test_individual_entry_route(testapp):
     """Test that an individual entry route brings up post_detail template."""
     response = testapp.get('/journal/1', status=200)
     html = response.html
     assert len(html.find_all("main")) == 1
     assert len(html.find_all("button")) == 2
+
+
+def test_detail_route_loads_correct_entry(testapp, fill_the_db):
+    """Test that the detail route loads the correct entry."""
+    response = testapp.get('/journal/2', status=200)
+    title = response.html.find_all(class_='container')[0].h1.getText()
+    body = response.html.find_all(class_='container')[0].p.getText()
+    assert title == ENTRIES[1]["title"]
+    assert body == ENTRIES[1]["body"]
