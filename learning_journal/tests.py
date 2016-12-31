@@ -3,14 +3,9 @@
 
 import pytest
 import transaction
-
 from pyramid import testing
-
-# from .models import Entry, get_tm_session
 from .models.meta import Base
 from .scripts.initializedb import ENTRIES
-
-
 from .models import (
     get_engine,
     get_session_factory,
