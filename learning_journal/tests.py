@@ -1,6 +1,5 @@
 """A testing suite for my learning journal app."""
 
-
 import pytest
 import transaction
 from pyramid import testing
@@ -205,8 +204,8 @@ def test_home_route_has_entrys(testapp, fill_the_db):
     """Test that the home page has all listed entries."""
     response = testapp.get('/', status=200)
     html = response.html
-    assert html.find_all('li')[3].getText() == "It's Monday Dude Created: Dec 20, 2016"
-    assert html.find_all('li')[4].getText() == "It's Tuesday Dude Created: Dec 21, 2016"
+    assert html.find_all('li')[3].a.getText() == "It's Monday Dude"
+    assert html.find_all('li')[4].a.getText() == "It's Tuesday Dude"
 
 
 def test_new_entry_route_has_input_and_textarea(testapp):
@@ -224,8 +223,8 @@ def test_new_entry_route_creates_new_entry_in_db(testapp):
         'body': 'sup'
     }
     response = testapp.post('/journal/new-entry', title, status=302)
-    full_response = response.follow()
-    assert full_response.html.find(class_='container').li.a.text == title["title"]
+    full_response = response.follow().html.find(class_='container')
+    assert full_response.li.a.text == title["title"]
 
 
 def test_update_entry_route_input_and_textarea(testapp):
