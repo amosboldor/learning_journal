@@ -1,6 +1,5 @@
 """A testing suite for my learning journal app."""
 
-
 import pytest
 import transaction
 from pyramid import testing
@@ -169,14 +168,28 @@ def testapp():
     from webtest import TestApp
     from learning_journal import main
 
-    app = main({}, **{"sqlalchemy.url": 'sqlite:///:memory:'})
+    app = main({}, **{'sqlalchemy.url': 'sqlite:///:memory:'})
     testapp = TestApp(app)
 
     session_factory = app.registry["dbsession_factory"]
     engine = session_factory().bind
+    Base.metadata.drop_all(bind=engine)
     Base.metadata.create_all(bind=engine)
 
     return testapp
+
+
+@pytest.fixture
+def fill_the_db(testapp):
+    """Fill the database with some model instances."""
+    session_factory = testapp.app.registry["dbsession_factory"]
+    with transaction.manager:
+        dbsession = get_tm_session(session_factory, transaction.manager)
+        for entry in ENTRIES:
+            row = Entry(title=entry["title"],
+                        creation_date=entry["creation_date"],
+                        body=entry["body"])
+            dbsession.add(row)
 
 
 def test_home_route_does_not_have_all_lists(testapp):
@@ -187,12 +200,31 @@ def test_home_route_does_not_have_all_lists(testapp):
     assert len(html.find_all("ul")) == 3
 
 
+def test_home_route_has_entrys(testapp, fill_the_db):
+    """Test that the home page has all listed entries."""
+    response = testapp.get('/', status=200)
+    html = response.html
+    assert html.find_all('li')[3].a.getText() == "It's Monday Dude"
+    assert html.find_all('li')[4].a.getText() == "It's Tuesday Dude"
+
+
 def test_new_entry_route_has_input_and_textarea(testapp):
     """Test that new entry route has input and textarea."""
     response = testapp.get('/journal/new-entry', status=200)
     html = response.html
     assert len(html.find_all("input")) == 2
     assert len(html.find_all("textarea")) == 1
+
+
+def test_new_entry_route_creates_new_entry_in_db(testapp):
+    """Test that new entry route creates new entry in db."""
+    title = {
+        'title': 'I have a dream.',
+        'body': 'sup'
+    }
+    response = testapp.post('/journal/new-entry', title, status=302)
+    full_response = response.follow().html.find(class_='container')
+    assert full_response.li.a.text == title["title"]
 
 
 def test_update_entry_route_input_and_textarea(testapp):
@@ -203,9 +235,38 @@ def test_update_entry_route_input_and_textarea(testapp):
     assert len(html.find_all("textarea")) == 1
 
 
+def test_update_entry_route_populates_with_correct_entry(testapp, fill_the_db):
+    """Test that update entry route populates the input and textarea."""
+    response = testapp.get('/journal/1/edit-entry', status=200)
+    title = response.html.form.input["value"]
+    body = response.html.form.textarea.contents[0]
+    assert title == ENTRIES[0]["title"]
+    assert body == ENTRIES[0]["body"]
+
+
+def test_update_entry_route_update_entry(testapp, fill_the_db):
+    """Test the update view and changes title."""
+    title = {
+        'title': 'I have a dream.',
+        'body': 'sup'
+    }
+    response = testapp.post('/journal/2/edit-entry', title, status=302)
+    full_response = response.follow().html.find_all(href='http://localhost/journal/2')[0]
+    assert full_response.text == title["title"]
+
+
 def test_individual_entry_route(testapp):
     """Test that an individual entry route brings up post_detail template."""
     response = testapp.get('/journal/1', status=200)
     html = response.html
     assert len(html.find_all("main")) == 1
     assert len(html.find_all("button")) == 2
+
+
+def test_detail_route_loads_correct_entry(testapp, fill_the_db):
+    """Test that the detail route loads the correct entry."""
+    response = testapp.get('/journal/2', status=200)
+    title = response.html.find_all(class_='container')[0].h1.getText()
+    body = response.html.find_all(class_='container')[0].p.getText()
+    assert title == ENTRIES[1]["title"]
+    assert body == ENTRIES[1]["body"]
