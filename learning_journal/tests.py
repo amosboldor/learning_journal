@@ -1,78 +1,58 @@
-"""A short testing suite for the expense tracker."""
-
+"""A testing suite for my learning journal app."""
 
 import pytest
 import transaction
-
 from pyramid import testing
-
-from .models import Entry, get_tm_session
 from .models.meta import Base
 from .scripts.initializedb import ENTRIES
-import datetime
+from .models import (
+    get_engine,
+    get_session_factory,
+    get_tm_session,
+    Entry
+)
 
 
 @pytest.fixture(scope="session")
-def configuration(request):
-    """Set up a Configurator instance.
-
-    This Configurator instance sets up a pointer to the location of the
-        database.
-    It also includes the models from your app's model package.
-    Finally it tears everything down, including the in-memory SQLite database.
-
-    This configuration will persist for the entire duration of your PyTest run.
-    """
-    settings = {
-        'sqlalchemy.url': 'sqlite:///:memory:'}  # points to an in-memory database.
-    config = testing.setUp(settings=settings)
-    config.include('.models')
-
-    def teardown():
-        testing.tearDown()
-
-    request.addfinalizer(teardown)
-    return config
-
-
-@pytest.fixture()
-def db_session(configuration, request):
-    """Create a session for interacting with the test database.
-
-    This uses the dbsession_factory on the configurator instance to create a
-    new database session. It binds that session to the available engine
-    and returns a new session for every call of the dummy_request object.
-    """
-    SessionFactory = configuration.registry['dbsession_factory']
-    session = SessionFactory()
-    engine = session.bind
+def sqlengine(request):
+    """Return sql engine."""
+    config = testing.setUp(settings={
+        'sqlalchemy.url': 'sqlite:///:memory:'
+    })
+    config.include(".models")
+    settings = config.get_settings()
+    engine = get_engine(settings)
     Base.metadata.create_all(engine)
 
     def teardown():
-        session.transaction.rollback()
+        testing.tearDown()
+        transaction.abort()
+        Base.metadata.drop_all(engine)
+
+    request.addfinalizer(teardown)
+    return engine
+
+
+@pytest.fixture(scope="function")
+def new_session(sqlengine, request):
+    """Return new session."""
+    session_factory = get_session_factory(sqlengine)
+    session = get_tm_session(session_factory, transaction.manager)
+
+    def teardown():
+        transaction.abort()
 
     request.addfinalizer(teardown)
     return session
 
 
 @pytest.fixture
-def dummy_request(db_session):
-    """Instantiate a fake HTTP Request, complete with a database session.
-
-    This is a function-level fixture, so every new request will have a
-    new database session.
-    """
-    return testing.DummyRequest(dbsession=db_session)
-
-
-@pytest.fixture
-def add_models(dummy_request):
-    """Add a bunch of model instances to the database.
-
-    Every test that includes this fixture will add new random expenses.
-    """
-    dummy_request.dbsession.add_all(STUFF)
-
+def dummy_request(new_session, method="GET"):
+    """Instantiate a fake HTTP Request, complete with a database session."""
+    request = testing.DummyRequest()
+    request.method = method
+    request.dbsession = new_session
+    return request
 
 STUFF = []
 for index, dic in enumerate(ENTRIES):
@@ -83,10 +63,10 @@ for index, dic in enumerate(ENTRIES):
 # ======== UNIT TESTS ==========
 
 
-def test_new_entrys_are_added(db_session):
+def test_new_entrys_are_added(new_session):
     """New entries get added to the database."""
-    db_session.add_all(STUFF)
-    query = db_session.query(Entry).all()
+    new_session.add_all(STUFF)
+    query = new_session.query(Entry).all()
     assert len(query) == len(STUFF)
 
 
@@ -98,72 +78,195 @@ def test_home_list_returns_empty_when_empty(dummy_request):
     assert len(query_list) == 0
 
 
-def test_home_list_returns_objects_when_exist(dummy_request, add_models):
+def test_home_list_returns_objects_when_exist(dummy_request, new_session):
     """Test that the home list does return objects when the DB is populated."""
     from .views.default import home_list
+    model = Entry(title=ENTRIES[0]["title"],
+                  body=ENTRIES[0]["body"],
+                  creation_date=ENTRIES[0]["creation_date"])
+    new_session.add(model)
     result = home_list(dummy_request)
     query_list = result["posts"][:]
-    assert len(query_list) == 2
+    assert len(query_list) == 1
+
+
+def test_detail_returns_entry_1(dummy_request, new_session):
+    """Test that entry return entry one."""
+    from .views.default import detail
+    model = Entry(title=ENTRIES[0]["title"],
+                  body=ENTRIES[0]["body"],
+                  creation_date=ENTRIES[0]["creation_date"])
+    new_session.add(model)
+    dummy_request.matchdict['id'] = 1
+    result = detail(dummy_request)
+    query_reslts = result["post"]
+    assert query_reslts.title == ENTRIES[0]["title"]
+    assert query_reslts.body == ENTRIES[0]["body"]
+
+
+def test_detail_returns_entry_2(dummy_request, new_session):
+    """Test that entry return entry two."""
+    from .views.default import detail
+    model = Entry(title=ENTRIES[1]["title"],
+                  body=ENTRIES[1]["body"],
+                  creation_date=ENTRIES[1]["creation_date"])
+    new_session.add(model)
+    dummy_request.matchdict['id'] = 1
+    result = detail(dummy_request)
+    query_reslts = result["post"]
+    assert query_reslts.title == ENTRIES[1]["title"]
+    assert query_reslts.body == ENTRIES[1]["body"]
+
+
+def test_update_returns_entry_1(dummy_request, new_session):
+    """Test update returns entry two."""
+    from .views.default import update
+    model = Entry(title=ENTRIES[0]["title"],
+                  body=ENTRIES[0]["body"],
+                  creation_date=ENTRIES[0]["creation_date"])
+    new_session.add(model)
+    dummy_request.matchdict['id'] = 1
+    result = update(dummy_request)
+    query_reslts = result["post"]
+    assert query_reslts.title == ENTRIES[0]["title"]
+    assert query_reslts.body == ENTRIES[0]["body"]
+
+
+def test_update_returns_entry_2(dummy_request, new_session):
+    """Test update returns entry two."""
+    from .views.default import update
+    model = Entry(title=ENTRIES[1]["title"],
+                  body=ENTRIES[1]["body"],
+                  creation_date=ENTRIES[1]["creation_date"])
+    new_session.add(model)
+    dummy_request.matchdict['id'] = 1
+    result = update(dummy_request)
+    query_reslts = result["post"]
+    assert query_reslts.title == ENTRIES[1]["title"]
+    assert query_reslts.body == ENTRIES[1]["body"]
+
+
+def test_update_returns_entry_random(dummy_request, new_session):
+    """Test update returns entry random."""
+    from .views.default import update
+    model = Entry(title="WAT",
+                  body="Bob Dole",
+                  creation_date="1/2/3")
+    new_session.add(model)
+    dummy_request.matchdict['id'] = 1
+    result = update(dummy_request)
+    query_reslts = result["post"]
+    assert query_reslts.title == "WAT"
+    assert query_reslts.body == "Bob Dole"
 
 # ======== FUNCTIONAL TESTS ===========
 
 
-# @pytest.fixture
-# def testapp():
-#     """Create an instance of webtests TestApp for testing routes.
+@pytest.fixture
+def testapp():
+    """Create an instance of webtests TestApp for testing routes."""
+    from webtest import TestApp
+    from learning_journal import main
 
-#     With the alchemy scaffold we need to add to our test application the
-#     setting for a database to be used for the models.
-#     We have to then set up the database by starting a database session.
-#     Finally we have to create all of the necessary tables that our app
-#     normally uses to function.
+    app = main({}, **{'sqlalchemy.url': 'sqlite:///:memory:'})
+    testapp = TestApp(app)
 
-#     The scope of the fixture is function-level, so every test will get a new
-#     test application.
-#     """
-#     from webtest import TestApp
-#     from learing_journal import main
+    session_factory = app.registry["dbsession_factory"]
+    engine = session_factory().bind
+    Base.metadata.drop_all(bind=engine)
+    Base.metadata.create_all(bind=engine)
 
-#     app = main({}, **{"sqlalchemy.url": 'sqlite:///:memory:'})
-#     testapp = TestApp(app)
-
-#     SessionFactory = app.registry["dbsession_factory"]
-#     engine = SessionFactory().bind
-#     Base.metadata.create_all(bind=engine)
-
-#     return testapp
+    return testapp
 
 
-# @pytest.fixture
-# def fill_the_db(testapp):
-#     """Fill the database with some model instances.
-
-#     Start a database session with the transaction manager and add all of the
-#     expenses. This will be done anew for every test.
-#     """
-#     SessionFactory = testapp.app.registry["dbsession_factory"]
-#     with transaction.manager:
-#         dbsession = get_tm_session(SessionFactory, transaction.manager)
-#         dbsession.add_all(STUFF)
-
-
-# def test_home_route_has_table(testapp):
-#     """The home page has a table in the html."""
-#     response = testapp.get('/', status=200)
-#     html = response.html
-#     import pdb; pdb.set_trace()
-#     assert len(html.find_all("table")) == 1
+@pytest.fixture
+def fill_the_db(testapp):
+    """Fill the database with some model instances."""
+    session_factory = testapp.app.registry["dbsession_factory"]
+    with transaction.manager:
+        dbsession = get_tm_session(session_factory, transaction.manager)
+        for entry in ENTRIES:
+            row = Entry(title=entry["title"],
+                        creation_date=entry["creation_date"],
+                        body=entry["body"])
+            dbsession.add(row)
 
 
-# def test_home_route_with_data_has_filled_table(testapp, fill_the_db):
-#     """When there's data in the database, the home page has some rows."""
-#     response = testapp.get('/', status=200)
-#     html = response.html
-#     assert len(html.find_all("tr")) == 101
+def test_home_route_does_not_have_all_lists(testapp):
+    """The home page has all html elements from index template."""
+    response = testapp.get('/', status=200)
+    html = response.html
+    assert len(html.find_all("main")) == 1
+    assert len(html.find_all("ul")) == 3
 
 
-# def test_home_route_has_table2(testapp):
-#     """Without data the home page only has the header row in its table."""
-#     response = testapp.get('/', status=200)
-#     html = response.html
-#     assert len(html.find_all("tr")) == 1
+def test_home_route_has_entrys(testapp, fill_the_db):
+    """Test that the home page has all listed entries."""
+    response = testapp.get('/', status=200)
+    html = response.html
+    assert html.find_all('li')[3].a.getText() == "It's Monday Dude"
+    assert html.find_all('li')[4].a.getText() == "It's Tuesday Dude"
+
+
+def test_new_entry_route_has_input_and_textarea(testapp):
+    """Test that new entry route has input and textarea."""
+    response = testapp.get('/journal/new-entry', status=200)
+    html = response.html
+    assert len(html.find_all("input")) == 2
+    assert len(html.find_all("textarea")) == 1
+
+
+def test_new_entry_route_creates_new_entry_in_db(testapp):
+    """Test that new entry route creates new entry in db."""
+    title = {
+        'title': 'I have a dream.',
+        'body': 'sup'
+    }
+    response = testapp.post('/journal/new-entry', title, status=302)
+    full_response = response.follow().html.find(class_='container')
+    assert full_response.li.a.text == title["title"]
+
+
+def test_update_entry_route_input_and_textarea(testapp):
+    """Test that update entry route has input and textarea."""
+    response = testapp.get('/journal/1/edit-entry', status=200)
+    html = response.html
+    assert len(html.find_all("input")) == 2
+    assert len(html.find_all("textarea")) == 1
+
+
+def test_update_entry_route_populates_with_correct_entry(testapp, fill_the_db):
+    """Test that update entry route populates the input and textarea."""
+    response = testapp.get('/journal/1/edit-entry', status=200)
+    title = response.html.form.input["value"]
+    body = response.html.form.textarea.contents[0]
+    assert title == ENTRIES[0]["title"]
+    assert body == ENTRIES[0]["body"]
+
+
+def test_update_entry_route_update_entry(testapp, fill_the_db):
+    """Test the update view and changes title."""
+    title = {
+        'title': 'I have a dream.',
+        'body': 'sup'
+    }
+    response = testapp.post('/journal/2/edit-entry', title, status=302)
+    full_response = response.follow().html.find_all(href='http://localhost/journal/2')[0]
+    assert full_response.text == title["title"]
+
+
+def test_individual_entry_route(testapp):
+    """Test that an individual entry route brings up post_detail template."""
+    response = testapp.get('/journal/1', status=200)
+    html = response.html
+    assert len(html.find_all("main")) == 1
+    assert len(html.find_all("button")) == 2
+
+
+def test_detail_route_loads_correct_entry(testapp, fill_the_db):
+    """Test that the detail route loads the correct entry."""
+    response = testapp.get('/journal/2', status=200)
+    title = response.html.find_all(class_='container')[0].h1.getText()
+    body = response.html.find_all(class_='container')[0].p.getText()
+    assert title == ENTRIES[1]["title"]
+    assert body == ENTRIES[1]["body"]
