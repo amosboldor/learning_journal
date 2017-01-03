@@ -362,3 +362,21 @@ def test_login_update_bad(testapp):
     from webtest.app import AppError
     with pytest.raises(AppError):
         testapp.get('/journal/1/edit-entry')
+
+# ======== SECURITY CSRF FUNCTIONAL TESTS ===========
+
+
+def test_create_form_has_token(testapp):
+    """Test that the create form has session token."""
+    testapp.post('/login', params={'Username': 'amos', 'Password': 'password'})
+    html = testapp.get('/journal/new-entry').html
+    input_csrf = html.findAll(attrs={"name": "csrf_token"})[0].get('value')
+    assert len(input_csrf) > 30
+
+
+def test_edit_form_has_token(testapp):
+    """Test that the edit form has session token."""
+    testapp.post('/login', params={'Username': 'amos', 'Password': 'password'})
+    html = testapp.get('/journal/1/edit-entry').html
+    input_csrf = html.findAll(attrs={"name": "csrf_token"})[0].get('value')
+    assert len(input_csrf) > 30
