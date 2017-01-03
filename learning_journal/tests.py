@@ -296,9 +296,19 @@ def test_login_create_ok(testapp):
 
 def test_login_update_ok(testapp):
     """Test that logging in gets you access to edit-entry route."""
-    testapp.post('/login', params={'Username': 'amos', 'Password': 'password'})
+    testapp.post('/login',
+                 params={'Username': 'amos',
+                         'Password': 'password'})
     resp = testapp.get('/journal/1/edit-entry')
     assert resp.status_code == 200
+
+
+def test_login_leads_to_home(testapp):
+    """Test that after logging in it sends you to the home route."""
+    resp = testapp.post('/login',
+                        params={'Username': 'amos',
+                                'Password': 'password'}).follow()
+    assert len(resp.html.find('main').ul)
 
 
 def test_login_page_has_fields(testapp):
