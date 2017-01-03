@@ -5,6 +5,8 @@ from pyramid.httpexceptions import HTTPFound
 import datetime
 from sqlalchemy.exc import DBAPIError
 from ..models import Entry
+from pyramid.security import remember, forget
+from ..security import check_credentials
 
 
 @view_config(route_name="home", renderer="../templates/index.jinja2")
@@ -25,7 +27,9 @@ def detail(request):
     return {"post": post_dict}
 
 
-@view_config(route_name="create", renderer="../templates/new_entry.jinja2")
+@view_config(route_name="create",
+             renderer="../templates/new_entry.jinja2",
+             permission="create")
 def create(request):
     """View for new entry page."""
     if request.method == "POST":
@@ -38,7 +42,9 @@ def create(request):
     return {}
 
 
-@view_config(route_name="update", renderer="../templates/edit_entry.jinja2")
+@view_config(route_name="update",
+             renderer="../templates/edit_entry.jinja2",
+             permission="edit")
 def update(request):
     """View for update page."""
     if request.method == "POST":
@@ -47,7 +53,9 @@ def update(request):
         creation_date = datetime.date.today().strftime("%m/%d/%Y")
         query = request.dbsession.query(Entry)
         post_dict = query.filter(Entry.id == request.matchdict['id'])
-        post_dict.update({"title": title, "body": body, "creation_date": creation_date})
+        post_dict.update({"title": title,
+                          "body": body,
+                          "creation_date": creation_date})
         return HTTPFound(location=request.route_url('home'))
     query = request.dbsession.query(Entry)
     post_dict = query.filter(Entry.id == request.matchdict['id']).first()
@@ -69,3 +77,23 @@ might be caused by one of the following things:
 After you fix the problem, please restart the Pyramid application to
 try it again.
 """
+
+
+@view_config(route_name='login', renderer='../templates/login.jinja2')
+def login(request):
+    """Login View."""
+    if request.method == 'POST':
+        username = request.params.get('Username', '')
+        password = request.params.get('Password', '')
+        if check_credentials(username, password):
+            headers = remember(request, username)
+            return HTTPFound(location=request.route_url('home'),
+                             headers=headers)
+    return {}
+
+
+@view_config(route_name='logout')
+def logout(request):
+    """Logout view."""
+    headers = forget(request)
+    return HTTPFound(request.route_url('home'), headers=headers)
