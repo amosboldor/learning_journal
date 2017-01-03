@@ -3,6 +3,7 @@
 <main class="container">
     <div class="form-group">
        <form method="POST">
+          <input type="hidden" name="csrf_token" value="{{ request.session.get_csrf_token() }}" />
           <label for="Title">Title:</label>
           <input class="form-control" rows="5" id="Title" name="title" value="{{ post.title }}"></input>
           <br>

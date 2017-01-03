@@ -79,7 +79,9 @@ try it again.
 """
 
 
-@view_config(route_name='login', renderer='../templates/login.jinja2')
+@view_config(route_name='login',
+             renderer='../templates/login.jinja2',
+             require_csrf=False)
 def login(request):
     """Login View."""
     if request.method == 'POST':
