@@ -311,6 +311,17 @@ def test_login_leads_to_home(testapp):
     assert len(resp.html.find('main').ul)
 
 
+def test_homepage_has_correct_button_showing(testapp):
+    """Test logging shows the create button hides login and shows logout."""
+    resp = testapp.post('/login',
+                        params={'Username': 'amos',
+                                'Password': 'password'}).follow().html
+    logout = resp.find(class_="navbar-right").text
+    create = resp.find(href="http://localhost/journal/new-entry").text
+    assert logout == '\n Logout\n'
+    assert create == 'Create New Entry'
+
+
 def test_login_page_has_fields(testapp):
     """Test that the login route brings up the login template."""
     html = testapp.get('/login').html
