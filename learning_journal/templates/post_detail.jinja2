@@ -4,6 +4,8 @@
     <h1>{{ post.title }}</h1>
     <h2>Created: {{ post.creation_date }}</h2>
     <p>{{ post.body }}</p>
+    {% if request.authenticated_userid %}
     <a href="{{ request.route_url('update', id=post.id) }}"><button type="button" id="target" class="btn btn-primary">Edit</button></a>
+    {% endif %}
 </main>
 {% endblock %}
