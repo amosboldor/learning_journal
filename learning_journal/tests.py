@@ -331,6 +331,19 @@ def test_homepage_has_correct_buttons_showing_when_not_logged_in(testapp):
     assert not create
 
 
+def test_that_logged_in_shows_edit_button(testapp):
+    """Test logging in shows the edit button in journal entry page."""
+    testapp.post('/login', params={'Username': 'amos', 'Password': 'password'})
+    html = testapp.get('/journal/1').html
+    assert html.find('main').a.text == 'Edit'
+
+
+def test_that_not_logged_in_does_not_shows_edit_button(testapp):
+    """Test not logging in does not show edit button in journal entry page."""
+    html = testapp.get('/journal/1').html
+    assert not html.find('main').a
+
+
 def test_login_page_has_fields(testapp):
     """Test that the login route brings up the login template."""
     html = testapp.get('/login').html
