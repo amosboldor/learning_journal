@@ -13,11 +13,11 @@ from .models import (
 )
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="function")
 def sqlengine(request):
     """Return sql engine."""
     config = testing.setUp(settings={
-        'sqlalchemy.url': 'sqlite:///:memory:'
+        'sqlalchemy.url': 'postgres:///amosboldor'
     })
     config.include(".models")
     settings = config.get_settings()
@@ -43,6 +43,14 @@ def new_session(sqlengine, request):
         transaction.abort()
 
     request.addfinalizer(teardown)
+    entry1 = Entry(title=ENTRIES[0]["title"],
+                   body=ENTRIES[0]["body"],
+                   creation_date=ENTRIES[0]["creation_date"])
+    entry2 = Entry(title=ENTRIES[1]["title"],
+                   body=ENTRIES[1]["body"],
+                   creation_date=ENTRIES[1]["creation_date"])
+    session.add(entry1)
+    session.add(entry2)
     return session
 
 
@@ -54,49 +62,27 @@ def dummy_request(new_session, method="GET"):
     request.dbsession = new_session
     return request
 
-STUFF = []
-for index, dic in enumerate(ENTRIES):
-    STUFF.append(Entry(title=dic["title"],
-                       body=dic["body"],
-                       creation_date=dic["creation_date"]))
 
 # ======== UNIT TESTS ==========
 
 
 def test_new_entrys_are_added(new_session):
     """New entries get added to the database."""
-    new_session.add_all(STUFF)
     query = new_session.query(Entry).all()
-    assert len(query) == len(STUFF)
+    assert len(query) == len(ENTRIES)
 
 
-def test_home_list_returns_empty_when_empty(dummy_request):
-    """Test that the home list returns no objects in the expenses iterable."""
-    from .views.default import home_list
-    result = home_list(dummy_request)
-    query_list = result["posts"][:]
-    assert len(query_list) == 0
-
-
-def test_home_list_returns_objects_when_exist(dummy_request, new_session):
+def test_home_list_returns_objects_when_exist(dummy_request):
     """Test that the home list does return objects when the DB is populated."""
     from .views.default import home_list
-    model = Entry(title=ENTRIES[0]["title"],
-                  body=ENTRIES[0]["body"],
-                  creation_date=ENTRIES[0]["creation_date"])
-    new_session.add(model)
     result = home_list(dummy_request)
     query_list = result["posts"][:]
-    assert len(query_list) == 1
+    assert len(query_list) == 2
 
 
-def test_detail_returns_entry_1(dummy_request, new_session):
+def test_detail_returns_entry_1(dummy_request):
     """Test that entry return entry one."""
     from .views.default import detail
-    model = Entry(title=ENTRIES[0]["title"],
-                  body=ENTRIES[0]["body"],
-                  creation_date=ENTRIES[0]["creation_date"])
-    new_session.add(model)
     dummy_request.matchdict['id'] = 1
     result = detail(dummy_request)
     query_reslts = result["post"]
@@ -104,27 +90,19 @@ def test_detail_returns_entry_1(dummy_request, new_session):
     assert query_reslts.body == ENTRIES[0]["body"]
 
 
-def test_detail_returns_entry_2(dummy_request, new_session):
+def test_detail_returns_entry_2(dummy_request):
     """Test that entry return entry two."""
     from .views.default import detail
-    model = Entry(title=ENTRIES[1]["title"],
-                  body=ENTRIES[1]["body"],
-                  creation_date=ENTRIES[1]["creation_date"])
-    new_session.add(model)
-    dummy_request.matchdict['id'] = 1
+    dummy_request.matchdict['id'] = 2
     result = detail(dummy_request)
     query_reslts = result["post"]
     assert query_reslts.title == ENTRIES[1]["title"]
     assert query_reslts.body == ENTRIES[1]["body"]
 
 
-def test_update_returns_entry_1(dummy_request, new_session):
+def test_update_returns_entry_1(dummy_request):
     """Test update returns entry two."""
     from .views.default import update
-    model = Entry(title=ENTRIES[0]["title"],
-                  body=ENTRIES[0]["body"],
-                  creation_date=ENTRIES[0]["creation_date"])
-    new_session.add(model)
     dummy_request.matchdict['id'] = 1
     result = update(dummy_request)
     query_reslts = result["post"]
@@ -132,32 +110,14 @@ def test_update_returns_entry_1(dummy_request, new_session):
     assert query_reslts.body == ENTRIES[0]["body"]
 
 
-def test_update_returns_entry_2(dummy_request, new_session):
+def test_update_returns_entry_2(dummy_request):
     """Test update returns entry two."""
     from .views.default import update
-    model = Entry(title=ENTRIES[1]["title"],
-                  body=ENTRIES[1]["body"],
-                  creation_date=ENTRIES[1]["creation_date"])
-    new_session.add(model)
-    dummy_request.matchdict['id'] = 1
+    dummy_request.matchdict['id'] = 2
     result = update(dummy_request)
     query_reslts = result["post"]
     assert query_reslts.title == ENTRIES[1]["title"]
     assert query_reslts.body == ENTRIES[1]["body"]
-
-
-def test_update_returns_entry_random(dummy_request, new_session):
-    """Test update returns entry random."""
-    from .views.default import update
-    model = Entry(title="WAT",
-                  body="Bob Dole",
-                  creation_date="1/2/3")
-    new_session.add(model)
-    dummy_request.matchdict['id'] = 1
-    result = update(dummy_request)
-    query_reslts = result["post"]
-    assert query_reslts.title == "WAT"
-    assert query_reslts.body == "Bob Dole"
 
 # # ======== FUNCTIONAL TESTS ===========
 
@@ -362,3 +322,21 @@ def test_login_update_bad(testapp):
     from webtest.app import AppError
     with pytest.raises(AppError):
         testapp.get('/journal/1/edit-entry')
+
+# ======== SECURITY CSRF FUNCTIONAL TESTS ===========
+
+
+def test_create_form_has_token(testapp):
+    """Test that the create form has session token."""
+    testapp.post('/login', params={'Username': 'amos', 'Password': 'password'})
+    html = testapp.get('/journal/new-entry').html
+    input_csrf = html.findAll(attrs={"name": "csrf_token"})[0].get('value')
+    assert len(input_csrf) > 30
+
+
+def test_edit_form_has_token(testapp):
+    """Test that the edit form has session token."""
+    testapp.post('/login', params={'Username': 'amos', 'Password': 'password'})
+    html = testapp.get('/journal/1/edit-entry').html
+    input_csrf = html.findAll(attrs={"name": "csrf_token"})[0].get('value')
+    assert len(input_csrf) > 30
