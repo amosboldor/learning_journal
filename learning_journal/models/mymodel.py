@@ -16,5 +16,12 @@ class Entry(Base):
     body = Column(Unicode)
     creation_date = Column(Unicode)
 
+    def to_json(self):
+        """JSON."""
+        return {
+            "title": self.title,
+            "body": self.body,
+            "creation_date": self.creation_date,
+        }
 
 Index('my_index', Entry.id, unique=True, mysql_length=255)

@@ -99,3 +99,11 @@ def logout(request):
     """Logout view."""
     headers = forget(request)
     return HTTPFound(request.route_url('home'), headers=headers)
+
+
+@view_config(route_name="api_list", renderer="json")
+def api_list_view(request):
+    """JSON."""
+    entries = request.dbsession.query(Entry).all()
+    output = [item.to_json() for item in entries]
+    return output
