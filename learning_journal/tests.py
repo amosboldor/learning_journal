@@ -17,7 +17,7 @@ from .models import (
 def sqlengine(request):
     """Return sql engine."""
     config = testing.setUp(settings={
-        'sqlalchemy.url': 'postgres:///amosboldor'
+        'sqlalchemy.url': 'sqlite:///:memory:'
     })
     config.include(".models")
     settings = config.get_settings()
