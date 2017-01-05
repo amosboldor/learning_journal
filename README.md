@@ -2,12 +2,33 @@
 
 Learning Journal app developed using Pyramid and deployed on heroku.
 
+## If you want to run locally? (With a SQLite Database)
+
+Make a new python environment then:
+
+#### Run
+```
+pip install -e .
+pip install -e .[testing]
+```
+1. Clone the repo
+2. Comment out line 8 in "learning_journal/\_\_init\_\_.py"
+3. Comment out line 53 in "learning_journal/scripts/initializedb.py"
+4. Uncomment line 17 in "development.ini"
+
+#### Then Run
+```
+initialize_db development.ini
+pserver development.ini
+```
+-------------
+-------------
 ##Deployment:
 
 You can find this learning journal deployed on Heroku [here](https://amos-learning-journal.herokuapp.com/)
 
 
-#Routes
+## Routes
 
 - home: `/` will take you to the home page, a listing of journal entries 
 - entry: `/journal/{ ID of Entry }` will take you a specific journal entry base on the ID that is given.
