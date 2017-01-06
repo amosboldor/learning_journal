@@ -5,10 +5,10 @@
        <form method="POST">
           <input type="hidden" name="csrf_token" value="{{ request.session.get_csrf_token() }}" />
           <label for="Title">Title:</label>
-          <input class="form-control" rows="5" id="Title" name="title" value="{{ post.title }}"></input>
+          <input required class="form-control" rows="5" id="Title" name="title" value="{{ post.title }}"></input>
           <br>
           <label for="Entry">Entry:</label>
-          <textarea class="form-control" rows="5" id="Entry" name="body">{{ post.body }}</textarea>
+          <textarea required class="form-control" rows="5" id="Entry" name="body">{{ post.body }}</textarea>
           <br>
           <input type="submit" class="btn btn-primary" value="Submit"/>
           <a href="{{ request.route_url('home')}}"><button type="button" class="btn btn-default">Cancel</button></a>

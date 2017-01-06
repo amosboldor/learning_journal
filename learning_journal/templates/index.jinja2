@@ -5,10 +5,10 @@
     <div class="form-group">
         <form>
             <label for="Title">Title:</label>
-            <input class="form-control" rows="5" id="Title" type="text" name="title"></input>
+            <input required class="form-control" rows="5" id="Title" type="text" name="title"></input>
             <br>
             <label for="Entry">Entry:</label>
-            <textarea class="form-control" rows="5" id="Entry" type="text" name="body"></textarea>
+            <textarea required class="form-control" rows="5" id="Entry" type="text" name="body"></textarea>
             <br>
             <button type="button" id="submit" class="btn btn-primary">Submit</button>
             <button type="button" id="cancel" class="btn btn-default">Cancel</button>
@@ -35,7 +35,10 @@ $(document).ready(function(){
     var submit = $("#submit");
     submit.on("click", function(){
         // send ajax request add entry
-        $.ajax({
+        if ($('#Title').val() == '' || $('#Entry').val() == '') {
+            alert('Both the Title field and the textarea field need to be filled!')
+        } else {
+            $.ajax({
             type: 'POST',
             headers: { 'X-CSRF-Token': csrfToken },
             url: 'journal/new-entry',
@@ -48,6 +51,7 @@ $(document).ready(function(){
                 $('#Entry').val('')
             }
         });
+        }
     });
 });
 </script>
