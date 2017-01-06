@@ -1,7 +1,7 @@
 {% extends "layout.jinja2" %}
 {% block main %}
 <main class="container">
-    <h1>{{ post.title }}</h1>
+    <h1>{{ post.title }}</h1><a href="https://twitter.com/share" class="twitter-share-button" data-text="{{ post.title }}" data-show-count="false">Tweet</a><script async src="//platform.twitter.com/widgets.js" charset="utf-8"></script>
     <h2>Created: {{ post.creation_date }}</h2>
     <p>{{ post.body }}</p>
     {% if request.authenticated_userid %}
