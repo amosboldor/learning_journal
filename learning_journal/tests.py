@@ -323,16 +323,14 @@ def test_login_page_has_fields(testapp):
 
 def test_login_create_bad(testapp):
     """Test new-entry route with out logging in makes 403 error."""
-    from webtest.app import AppError
-    with pytest.raises(AppError):
-        testapp.get('/journal/new-entry')
+    response = testapp.get('/journal/new-entry', status=403)
+    assert response.status_code == 403
 
 
 def test_login_update_bad(testapp):
     """Test edit-entry route with out logging in makes 403 error."""
-    from webtest.app import AppError
-    with pytest.raises(AppError):
-        testapp.get('/journal/1/edit-entry')
+    response = testapp.get('/journal/1/edit-entry', status=403)
+    assert response.status_code == 403
 
 # ======== SECURITY CSRF FUNCTIONAL TESTS ===========
 
