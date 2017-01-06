@@ -237,8 +237,11 @@ def test_detail_route_loads_correct_entry(testapp, fill_the_db):
     assert body == ENTRIES[1]["body"]
 
 
-# def test_tweat_button_exists():
-#     """Test that tweat button exists and """
+def test_tweat_button_exists(testapp):
+    """Test that tweat button exists."""
+    response = testapp.get('/journal/1', status=200)
+    html = response.html
+    assert html.find(class_='twitter-share-button')
 
 
 # ======== SECURITY TESTS ===========
