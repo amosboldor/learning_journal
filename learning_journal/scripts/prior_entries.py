@@ -57,7 +57,6 @@ def main(argv=sys.argv):
         titles = []
         for entry in dbsession.query(Entry).all():
             titles.append(entry.title)
-        pprint(titles)
         for entry in entries:
             if entry["title"] not in titles:
                 yourdate = dateutil.parser.parse(entry["creation_date"])
