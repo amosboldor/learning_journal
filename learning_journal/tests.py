@@ -168,6 +168,21 @@ def test_home_route_has_entrys(testapp, fill_the_db):
     assert html.find_all('li')[3].a.getText() == "It's Tuesday Dude"
 
 
+def test_that_home_route_does_not_has_create_form(testapp):
+    """Test that when not logged in, it won't show form."""
+    response = testapp.get('/', status=200)
+    html = response.html
+    assert not html.find('form')
+
+
+def test_that_home_route_has_create_form(testapp):
+    """Test that when logged in, it shows form."""
+    testapp.post('/login', params={'Username': 'amos', 'Password': 'password'})
+    response = testapp.get('/', status=200)
+    html = response.html
+    assert html.find('form')
+
+
 def test_update_entry_route_input_and_textarea(testapp):
     """Test that update entry route has input and textarea."""
     testapp.post('/login', params={'Username': 'amos', 'Password': 'password'})
@@ -220,6 +235,10 @@ def test_detail_route_loads_correct_entry(testapp, fill_the_db):
     body = response.html.find_all(class_='container')[0].p.getText()
     assert title == ENTRIES[1]["title"]
     assert body == ENTRIES[1]["body"]
+
+
+# def test_tweat_button_exists():
+#     """Test that tweat button exists and """
 
 
 # ======== SECURITY TESTS ===========
