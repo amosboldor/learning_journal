@@ -332,6 +332,15 @@ def test_login_update_bad(testapp):
     response = testapp.get('/journal/1/edit-entry', status=403)
     assert response.status_code == 403
 
+
+def test_app_can_log_in_and_be_authed(set_auth_credentials, testapp):
+    """Foo."""
+    testapp.post("/login", params={
+        'Username': 'amos',
+        'Password': 'password'
+    })
+    assert "auth_tkt" in testapp.cookies
+
 # ======== SECURITY CSRF FUNCTIONAL TESTS ===========
 
 
