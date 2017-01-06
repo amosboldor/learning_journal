@@ -168,27 +168,6 @@ def test_home_route_has_entrys(testapp, fill_the_db):
     assert html.find_all('li')[3].a.getText() == "It's Tuesday Dude"
 
 
-# def test_new_entry_route_has_input_and_textarea(testapp):
-#     """Test that new entry route has input and textarea."""
-#     testapp.post('/login', params={'Username': 'amos', 'Password': 'password'})
-#     response = testapp.get('/journal/new-entry', status=200)
-#     html = response.html
-#     assert len(html.find_all("input")) == 2
-#     assert len(html.find_all("textarea")) == 1
-
-
-# def test_new_entry_route_creates_new_entry_in_db(testapp):
-#     """Test that new entry route creates new entry in db."""
-#     testapp.post('/login', params={'Username': 'amos', 'Password': 'password'})
-#     title = {
-#         'title': 'I have a dream.',
-#         'body': 'sup'
-#     }
-#     response = testapp.post('/journal/new-entry', title, status=302)
-#     full_response = response.follow().html.find(class_='container')
-#     assert full_response.li.a.text == title["title"]
-
-
 def test_update_entry_route_input_and_textarea(testapp):
     """Test that update entry route has input and textarea."""
     testapp.post('/login', params={'Username': 'amos', 'Password': 'password'})
@@ -243,26 +222,7 @@ def test_detail_route_loads_correct_entry(testapp, fill_the_db):
     assert body == ENTRIES[1]["body"]
 
 
-# ======== SECURITY UNIT TESTS ===========
-
-
-# def test_login_view(dummy_request):
-#     """Test that logging."""
-#     from .views.default import login
-#     dummy_request.POST['Username'] = 'amos'
-#     dummy_request.POST['Password'] = 'password'
-#     result = login(dummy_request)
-#     import pdb; pdb.set_trace()
-#     assert True
-
-
-# ======== SECURITY FUNCTIONAL TESTS ===========
-
-# def test_login_create_ok(testapp):
-#     """Test that logging in gets you access to create."""
-#     testapp.post('/login', params={'Username': 'amos', 'Password': 'password'})
-#     resp = testapp.get('/journal/new-entry')
-#     assert resp.status_code == 200
+# ======== SECURITY TESTS ===========
 
 
 def test_login_update_ok(testapp):
@@ -280,26 +240,6 @@ def test_login_leads_to_home(testapp):
                         params={'Username': 'amos',
                                 'Password': 'password'}).follow()
     assert len(resp.html.find('main').ul)
-
-
-# def test_homepage_has_correct_buttons_showing_when_logged_in(testapp):
-#     """Test logging in shows the create and logout, hides login buttons."""
-#     resp = testapp.post('/login',
-#                         params={'Username': 'amos',
-#                                 'Password': 'password'}).follow().html
-#     logout = resp.find(class_="navbar-right").text
-#     create = resp.find(href="http://localhost/journal/new-entry").text
-#     assert logout == '\n Logout\n'
-#     assert create == 'Create New Entry'
-
-
-def test_homepage_has_correct_buttons_showing_when_not_logged_in(testapp):
-    """Test not logging in shows the login hides, create and logout buttons."""
-    html = testapp.get('/').html
-    logout = html.find(class_="navbar-right").text
-    create = html.find(href="http://localhost/journal/new-entry")
-    assert logout == '\n Login\n'
-    assert not create
 
 
 def test_that_logged_in_shows_edit_button(testapp):
@@ -334,23 +274,20 @@ def test_login_update_bad(testapp):
 
 
 def test_app_can_log_in_and_be_authed(testapp):
-    """Foo."""
+    """Test that logging in gives you auth_tkt."""
     testapp.post("/login", params={
         'Username': 'amos',
         'Password': 'password'
     })
-    # import pdb; pdb.set_trace()
     assert "auth_tkt" in testapp.cookies
 
+
+def test_logout_removes_authentication(testapp):
+    """Test that logout route removes token."""
+    testapp.get("/logout")
+    assert "auth_tkt" not in testapp.cookies
+
 # ======== SECURITY CSRF FUNCTIONAL TESTS ===========
-
-
-# def test_create_form_has_token(testapp):
-#     """Test that the create form has session token."""
-#     testapp.post('/login', params={'Username': 'amos', 'Password': 'password'})
-#     html = testapp.get('/journal/new-entry').html
-#     input_csrf = html.findAll(attrs={"name": "csrf_token"})[0].get('value')
-#     assert len(input_csrf) > 30
 
 
 def test_edit_form_has_token(testapp):
