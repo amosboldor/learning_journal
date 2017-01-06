@@ -29,10 +29,10 @@ def usage(argv):
 
 
 def main(argv=sys.argv):
-    r = requests.get(os.environ.get('LEARN_URL', '')).json()
+    json = requests.get(os.environ.get('LEARN_URL', '')).json()
     entries = []
 
-    for entry in r:
+    for entry in json:
         entries.append({"title": entry["title"],
                         "id": entry["id"],
                         "creation_date": entry["created"],
