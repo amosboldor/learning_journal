@@ -333,12 +333,13 @@ def test_login_update_bad(testapp):
     assert response.status_code == 403
 
 
-def test_app_can_log_in_and_be_authed(set_auth_credentials, testapp):
+def test_app_can_log_in_and_be_authed(testapp):
     """Foo."""
     testapp.post("/login", params={
         'Username': 'amos',
         'Password': 'password'
     })
+    # import pdb; pdb.set_trace()
     assert "auth_tkt" in testapp.cookies
 
 # ======== SECURITY CSRF FUNCTIONAL TESTS ===========
