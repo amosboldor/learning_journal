@@ -52,6 +52,8 @@ def main(argv=sys.argv):
 
     session_factory = get_session_factory(engine)
 
+    number_of_enties_inserted = 0
+
     with transaction.manager:
         dbsession = get_tm_session(session_factory, transaction.manager)
         titles = []
@@ -59,8 +61,10 @@ def main(argv=sys.argv):
             titles.append(entry.title)
         for entry in entries:
             if entry["title"] not in titles:
+                number_of_enties_inserted += 1
                 yourdate = dateutil.parser.parse(entry["creation_date"])
                 model = Entry(title=entry["title"],
                               body=entry["body"],
                               creation_date=yourdate.strftime("%m/%d/%Y"))
                 dbsession.add(model)
+    print('{} Entries inserted in to database.'.format(number_of_enties_inserted))
