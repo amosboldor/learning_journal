@@ -57,5 +57,6 @@ setup(name='learning_journal',
       main = learning_journal:main
       [console_scripts]
       initialize_db = learning_journal.scripts.initializedb:main
+      stuff = learning_journal.scripts.prior_entries:main
       """,
       )
