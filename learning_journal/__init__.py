@@ -5,7 +5,7 @@ import os
 def main(global_config, **settings):
     """ This function returns a Pyramid WSGI application."""
     if "sqlalchemy.url" not in settings:
-        settings["sqlalchemy.url"] = os.environ.get('DATABASE_URL', 'sqlite:///:memory:')
+        settings["sqlalchemy.url"] = os.environ.get('DATABASE_URL', 'sqlite:///learning_journal.sqlite')
     config = Configurator(settings=settings)
     config.include('pyramid_jinja2')
     config.include('.models')
