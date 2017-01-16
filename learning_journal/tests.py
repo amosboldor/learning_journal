@@ -17,7 +17,7 @@ from .models import (
 def sqlengine(request):
     """Return sql engine."""
     config = testing.setUp(settings={
-        'sqlalchemy.url': 'postgres:///amosboldor'
+        'sqlalchemy.url': 'sqlite:///learning_journal.sqlite'
     })
     config.include(".models")
     settings = config.get_settings()
@@ -128,7 +128,7 @@ def testapp():
     from webtest import TestApp
     from learning_journal import main
 
-    app = main({}, **{'sqlalchemy.url': 'postgres:///amosboldor'})
+    app = main({}, **{'sqlalchemy.url': 'sqlite:///learning_journal.sqlite'})
     testapp = TestApp(app)
 
     session_factory = app.registry["dbsession_factory"]
