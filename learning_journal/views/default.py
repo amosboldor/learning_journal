@@ -33,12 +33,14 @@ def detail(request):
 def create(request):
     """View for new entry page."""
     if request.method == "POST":
-        title = request.POST["title"]
-        body = request.POST["body"]
-        creation_date = datetime.date.today().strftime("%m/%d/%Y")
-        new_model = Entry(title=title, body=body, creation_date=creation_date)
-        request.dbsession.add(new_model)
-        return HTTPFound(location=request.route_url('home'))
+        post_dict_keys = list(request.POST.keys())
+        if "title" in post_dict_keys and "body" in post_dict_keys:
+            title = request.POST["title"]
+            body = request.POST["body"]
+            creation_date = datetime.date.today().strftime("%m/%d/%Y")
+            new_model = Entry(title=title, body=body, creation_date=creation_date)
+            request.dbsession.add(new_model)
+            return HTTPFound(location=request.route_url('home'))
     return {}
 
 
@@ -79,7 +81,9 @@ try it again.
 """
 
 
-@view_config(route_name='login', renderer='../templates/login.jinja2')
+@view_config(route_name='login',
+             renderer='../templates/login.jinja2',
+             require_csrf=False)
 def login(request):
     """Login View."""
     if request.method == 'POST':
@@ -97,3 +101,11 @@ def logout(request):
     """Logout view."""
     headers = forget(request)
     return HTTPFound(request.route_url('home'), headers=headers)
+
+
+@view_config(route_name="api_list", renderer="json")
+def api_list_view(request):
+    """JSON."""
+    entries = request.dbsession.query(Entry).all()
+    output = [item.to_json() for item in entries]
+    return output
